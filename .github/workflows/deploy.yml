@@ -1,0 +1,59 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy — monitoring
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Copiar arquivos para a VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          port: ${{ secrets.VPS_PORT }}
+          source: "docker-compose.yml,prometheus/,loki/,grafana/"
+          target: /opt/monitoring
+          overwrite: true
+
+      - name: Deploy na VPS via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          APP_ENV_CONTENT: ${{ secrets.APP_ENV }}
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          port: ${{ secrets.VPS_PORT }}
+          envs: APP_ENV_CONTENT
+          script: |
+            set -e
+            cd /opt/monitoring
+
+            if [ -n "$APP_ENV_CONTENT" ]; then
+              echo "$APP_ENV_CONTENT" > .env.app
+              chmod 600 .env.app
+            fi
+
+            docker network inspect proxy > /dev/null 2>&1 || docker network create proxy
+
+            docker compose pull
+            docker compose up -d --remove-orphans
+
+            echo "Deploy monitoring concluído!"
+
+      - name: Resumo
+        run: |
+          echo "### ✅ Monitoring stack deployada!" >> $GITHUB_STEP_SUMMARY
+          echo "| Serviço | URL |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| Grafana | https://grafana.dev2b.tec.br |" >> $GITHUB_STEP_SUMMARY
