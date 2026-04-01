@@ -21,7 +21,7 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           password: ${{ secrets.VPS_PASSWORD }}
           port: ${{ secrets.VPS_PORT }}
-          source: "docker-compose.yml,prometheus/,loki/,grafana/"
+          source: "docker-compose.yml,prometheus/,loki/,promtail/,grafana/"
           target: /opt/monitoring
           overwrite: true
 

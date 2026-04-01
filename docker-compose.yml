@@ -84,6 +84,20 @@ services:
     networks:
       - monitoring-net
 
+  promtail:
+    image: grafana/promtail:latest
+    container_name: promtail
+    restart: unless-stopped
+    command: -config.file=/etc/promtail/promtail-config.yml
+    volumes:
+      - ./promtail/promtail-config.yml:/etc/promtail/promtail-config.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - monitoring-net
+    depends_on:
+      - loki
+
   # ── Logs ───────────────────────────────────────────────────────────────────
   loki:
     image: grafana/loki:latest
